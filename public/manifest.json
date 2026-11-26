@@ -1,0 +1,13 @@
+{
+  "name": "Owlbear Rodeo Extension Starter",
+  "version": "0.1.0",
+  "manifest_version": 1,
+  "description": "A starter extension built with the Owlbear Rodeo SDK.",
+  "action": {
+    "title": "Extension Starter",
+    "icon": "/icon.svg",
+    "popover": "/",
+    "width": 400,
+    "height": 460
+  }
+}
