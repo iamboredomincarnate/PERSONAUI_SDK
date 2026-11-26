@@ -36,6 +36,16 @@ The static site and extension manifest are written to `dist/`. Host that
 directory at the root of a site, or adjust the manifest URLs and Vite base path
 for your hosting setup before deploying.
 
+## Deploy to GitHub Pages
+
+The `Deploy to GitHub Pages` workflow builds `dist/` and publishes it whenever
+changes are pushed to `main`. In the repository settings, set Pages' build and
+deployment source to **GitHub Actions**. The Owlbear Rodeo install URL is:
+
+```text
+https://iamboredomincarnate.github.io/PERSONAUI_SDK/manifest.json
+```
+
 ## Project layout
 
 - `public/manifest.json` — Owlbear Rodeo extension manifest

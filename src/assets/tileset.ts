@@ -1,7 +1,7 @@
 export const TILE_SIZE = 16;
 export const TILESET_COLUMNS = 18;
 export const TILESET_ROWS = 2;
-export const TILESET_IMAGE = "/images/tiles_tightly_packed.png";
+export const TILESET_IMAGE = `${import.meta.env.BASE_URL}images/tiles_tightly_packed.png`;
 
 type TileCoordinate = {
   column: number;
