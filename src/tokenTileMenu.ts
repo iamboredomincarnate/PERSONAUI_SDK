@@ -20,7 +20,6 @@ const HOVER_TOOL_ID = `${EXTENSION_ID}/hover-tool`;
 const HOVER_MODE_ID = `${HOVER_TOOL_ID}/mode`;
 const HOVER_POPOVER_ID = `${EXTENSION_ID}/hover-menu`;
 const ASSIGN_CONTEXT_MENU_ID = `${EXTENSION_ID}/assign-elements`;
-const ASSIGN_POPOVER_ID = `${EXTENSION_ID}/assign-menu`;
 const TILE_NAMES = Object.keys(tiles) as TileName[];
 const TILE_GAP = 4;
 const TILE_WIDTH = 36;
@@ -31,17 +30,20 @@ const HOVER_MENU_WIDTH =
   MENU_PADDING * 2 +
   2;
 const HOVER_MENU_HEIGHT = 52;
-const ASSIGN_MENU_WIDTH = 420;
 const ASSIGN_MENU_HEIGHT = 540;
 const EXTENSION_ICON = new URL(
   `${import.meta.env.BASE_URL}icon.svg`,
   window.location.href,
 ).toString();
 
-function pageUrl(view: "tiles" | "assign", tokenId: string): string {
+function pageUrl(view: "tiles" | "assign", tokenId?: string): string {
   const url = new URL(import.meta.env.BASE_URL, window.location.origin);
   url.searchParams.set("view", view);
-  url.searchParams.set("tokenId", tokenId);
+
+  if (tokenId) {
+    url.searchParams.set("tokenId", tokenId);
+  }
+
   return url.toString();
 }
 
@@ -78,21 +80,6 @@ function anchorBelowToken(token: Item): Promise<Vector2> {
   );
 }
 
-async function openAssignmentMenu(token: Item): Promise<void> {
-  const anchor = await anchorBelowToken(token);
-
-  await OBR.popover.open({
-    id: ASSIGN_POPOVER_ID,
-    url: pageUrl("assign", token.id),
-    width: ASSIGN_MENU_WIDTH,
-    height: ASSIGN_MENU_HEIGHT,
-    anchorReference: "POSITION",
-    anchorPosition: { left: anchor.x, top: anchor.y },
-    anchorOrigin: { horizontal: "CENTER", vertical: "BOTTOM" },
-    transformOrigin: { horizontal: "CENTER", vertical: "TOP" },
-  });
-}
-
 async function registerAssignContextMenu(): Promise<void> {
   await OBR.contextMenu.create({
     id: ASSIGN_CONTEXT_MENU_ID,
@@ -112,21 +99,9 @@ async function registerAssignContextMenu(): Promise<void> {
         },
       },
     ],
-    onClick: (_context, elementId) => {
-      void OBR.scene.items
-        .getItems([elementId])
-        .then(([token]) => {
-          if (!token || !isTokenItem(token)) {
-            throw new Error(
-              `Cannot assign elements: token "${elementId}" is unavailable.`,
-            );
-          }
-
-          return openAssignmentMenu(token);
-        })
-        .catch((error: unknown) => {
-          console.error("Failed to open the element assignment menu.", error);
-        });
+    embed: {
+      url: pageUrl("assign"),
+      height: ASSIGN_MENU_HEIGHT,
     },
   });
 }
@@ -393,7 +368,22 @@ export function renderElementAssignmentMenu(tokenId: string | null): void {
   }
 
   OBR.onReady(() => {
-    void initializeAssignmentForm(panel, tokenId).catch((error: unknown) => {
+    void (async () => {
+      let selectedTokenId = tokenId;
+
+      if (!selectedTokenId) {
+        const selection = await OBR.player.getSelection();
+
+        if (!selection || selection.length !== 1) {
+          showPageError(panel, "Select a single token to assign its elements.");
+          return;
+        }
+
+        selectedTokenId = selection[0];
+      }
+
+      await initializeAssignmentForm(panel, selectedTokenId);
+    })().catch((error: unknown) => {
       console.error("Failed to open the element assignment menu.", error);
       showPageError(panel, "Unable to load element assignments.");
     });
@@ -424,7 +414,6 @@ async function initializeAssignmentForm(
   const error = document.createElement("p");
   const actions = document.createElement("div");
   const saveButton = document.createElement("button");
-  const cancelButton = document.createElement("button");
   const controls = new Map<
     TileName,
     { affinity: HTMLSelectElement; visible: HTMLInputElement }
@@ -440,9 +429,7 @@ async function initializeAssignmentForm(
   error.setAttribute("role", "alert");
   actions.className = "assignment-actions";
   saveButton.type = "submit";
-  saveButton.textContent = "Save";
-  cancelButton.type = "button";
-  cancelButton.textContent = "Cancel";
+  saveButton.textContent = "Save Changes";
 
   for (const name of TILE_NAMES) {
     const setting = getElementAffinitySetting(settings, name);
@@ -477,15 +464,9 @@ async function initializeAssignmentForm(
     controls.set(name, { affinity, visible });
   }
 
-  actions.append(saveButton, cancelButton);
+  actions.append(saveButton);
   form.append(heading, description, rows, error, actions);
   panel.replaceChildren(form);
-
-  cancelButton.addEventListener("click", () => {
-    void OBR.popover.close(ASSIGN_POPOVER_ID).catch((closeError: unknown) => {
-      console.error("Failed to close the element assignment menu.", closeError);
-    });
-  });
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -509,9 +490,16 @@ async function initializeAssignmentForm(
     saveButton.disabled = true;
     error.textContent = "";
     void saveElementAffinities(tokenId, updated)
-      .then(() => OBR.popover.close(ASSIGN_POPOVER_ID))
+      .then(() => {
+        error.className = "assignment-status";
+        error.setAttribute("role", "status");
+        error.textContent = "Saved.";
+        saveButton.disabled = false;
+      })
       .catch((saveError: unknown) => {
         console.error("Failed to save element affinities.", saveError);
+        error.className = "assignment-error";
+        error.setAttribute("role", "alert");
         error.textContent = "Unable to save. Check token permissions and retry.";
         saveButton.disabled = false;
       });

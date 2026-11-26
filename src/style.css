@@ -228,7 +228,7 @@ body.assignment-menu-page {
 .affinity-row {
   display: grid;
   min-height: 32px;
-  grid-template-columns: 16px minmax(56px, 1fr) minmax(135px, 1.6fr) auto;
+  grid-template-columns: 16px minmax(44px, 0.7fr) minmax(94px, 1.4fr) auto;
   align-items: center;
   gap: 6px;
 }
@@ -285,5 +285,11 @@ body.assignment-menu-page {
 .menu-error {
   margin: 0;
   color: #fca5a5;
+  font-size: 0.8rem;
+}
+
+.assignment-status {
+  margin: 0;
+  color: #86efac;
   font-size: 0.8rem;
 }
