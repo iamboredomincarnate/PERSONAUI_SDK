@@ -134,7 +134,7 @@ body.tile-menu-page {
   align-items: flex-start;
   gap: 4px;
   width: max-content;
-  padding: 8px;
+  padding: 8px 4px;
   border: 1px solid #374151;
   border-radius: 8px;
   background: #1f2937;

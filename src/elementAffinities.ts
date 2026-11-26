@@ -3,6 +3,8 @@ import { tiles, type TileName } from "./assets/tileset";
 
 export const ELEMENT_AFFINITY_METADATA_KEY =
   "iamboredomincarnate/persona-ui/element-affinities";
+const ELEMENT_AFFINITY_BASE_NAME_METADATA_KEY =
+  `${ELEMENT_AFFINITY_METADATA_KEY}/base-name`;
 
 export const ELEMENT_AFFINITIES = [
   { value: "neutral", label: "Neutral", display: "-" },
@@ -85,6 +87,82 @@ export function getElementAffinitySetting(
   return settings[name] ?? { affinity: "neutral", visible: false };
 }
 
+function formatElementAffinityName(
+  baseName: string,
+  settings: ElementAffinityMap,
+): string {
+  const summary: string[] = [];
+
+  for (const name of TILE_NAMES) {
+    const setting = getElementAffinitySetting(settings, name);
+
+    if (!setting.visible) {
+      continue;
+    }
+
+    const affinity = ELEMENT_AFFINITIES.find(
+      (option) => option.value === setting.affinity,
+    );
+
+    if (!affinity) {
+      throw new Error(`Unknown affinity "${setting.affinity}" for ${name}.`);
+    }
+
+    summary.push(`${name} ${affinity.display}`);
+  }
+
+  if (summary.length === 0) {
+    return baseName;
+  }
+
+  return baseName
+    ? `${baseName} · ${summary.join(" · ")}`
+    : summary.join(" · ");
+}
+
+export function isElementAffinityNameCurrent(item: Item): boolean {
+  const settings = readElementAffinities(item);
+  const storedBaseName = item.metadata[ELEMENT_AFFINITY_BASE_NAME_METADATA_KEY];
+
+  if (storedBaseName === undefined) {
+    return !TILE_NAMES.some(
+      (name) => getElementAffinitySetting(settings, name).visible,
+    );
+  }
+
+  if (typeof storedBaseName !== "string") {
+    throw new Error(
+      `Invalid element affinity name metadata on token "${item.id}".`,
+    );
+  }
+
+  return item.name === formatElementAffinityName(storedBaseName, settings);
+}
+
+export function applyElementAffinitySettings(
+  item: Item,
+  settings: ElementAffinityMap,
+): void {
+  const storedBaseName = item.metadata[ELEMENT_AFFINITY_BASE_NAME_METADATA_KEY];
+
+  if (storedBaseName !== undefined && typeof storedBaseName !== "string") {
+    throw new Error(
+      `Invalid element affinity name metadata on token "${item.id}".`,
+    );
+  }
+
+  const previousSettings = readElementAffinities(item);
+  const baseName =
+    typeof storedBaseName === "string" &&
+    item.name === formatElementAffinityName(storedBaseName, previousSettings)
+      ? storedBaseName
+      : item.name;
+
+  item.metadata[ELEMENT_AFFINITY_BASE_NAME_METADATA_KEY] = baseName;
+  item.metadata[ELEMENT_AFFINITY_METADATA_KEY] = settings;
+  item.name = formatElementAffinityName(baseName, settings);
+}
+
 export async function saveElementAffinities(
   itemId: string,
   settings: ElementAffinityMap,
@@ -96,6 +174,6 @@ export async function saveElementAffinities(
   }
 
   await OBR.scene.items.updateItems([item], (drafts) => {
-    drafts[0].metadata[ELEMENT_AFFINITY_METADATA_KEY] = settings;
+    applyElementAffinitySettings(drafts[0], settings);
   });
 }

@@ -1,0 +1,13 @@
+{
+  "name": "Persona UI (Local)",
+  "version": "0.1.0",
+  "manifest_version": 1,
+  "description": "Local development build of Persona UI.",
+  "action": {
+    "title": "Persona UI (Local)",
+    "icon": "http://localhost:5173/icon.svg",
+    "popover": "http://localhost:5173/",
+    "width": 400,
+    "height": 460
+  }
+}

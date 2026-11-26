@@ -6,9 +6,12 @@ import OBR, {
 } from "@owlbear-rodeo/sdk";
 import { getTileStyle, tiles, type TileName } from "./assets/tileset";
 import {
+  applyElementAffinitySettings,
   ELEMENT_AFFINITIES,
+  ELEMENT_AFFINITY_METADATA_KEY,
   getElementAffinitySetting,
   isElementAffinity,
+  isElementAffinityNameCurrent,
   isTokenItem,
   readElementAffinities,
   saveElementAffinities,
@@ -23,11 +26,11 @@ const ASSIGN_CONTEXT_MENU_ID = `${EXTENSION_ID}/assign-elements`;
 const TILE_NAMES = Object.keys(tiles) as TileName[];
 const TILE_GAP = 4;
 const TILE_WIDTH = 36;
-const MENU_PADDING = 8;
+const MENU_HORIZONTAL_PADDING = 4;
 const HOVER_MENU_WIDTH =
   TILE_NAMES.length * TILE_WIDTH +
   Math.max(0, TILE_NAMES.length - 1) * TILE_GAP +
-  MENU_PADDING * 2 +
+  MENU_HORIZONTAL_PADDING * 2 +
   2;
 const HOVER_MENU_HEIGHT = 52;
 const ASSIGN_MENU_HEIGHT = 540;
@@ -78,6 +81,29 @@ function anchorBelowToken(token: Item): Promise<Vector2> {
       y: bounds.max.y,
     }),
   );
+}
+
+async function syncExistingTokenNames(): Promise<void> {
+  if ((await OBR.player.getRole()) !== "GM") {
+    return;
+  }
+
+  const tokens = (await OBR.scene.items.getItems()).filter(
+    (item) =>
+      isTokenItem(item) &&
+      item.metadata[ELEMENT_AFFINITY_METADATA_KEY] !== undefined &&
+      !isElementAffinityNameCurrent(item),
+  );
+
+  if (tokens.length === 0) {
+    return;
+  }
+
+  await OBR.scene.items.updateItems(tokens, (drafts) => {
+    for (const token of drafts) {
+      applyElementAffinitySettings(token, readElementAffinities(token));
+    }
+  });
 }
 
 async function registerAssignContextMenu(): Promise<void> {
@@ -206,6 +232,9 @@ export async function initializeTokenTileMenu(): Promise<void> {
   };
 
   await registerAssignContextMenu();
+  await syncExistingTokenNames().catch((error: unknown) => {
+    console.error("Failed to sync existing token affinity names.", error);
+  });
   await OBR.tool.create({
     id: HOVER_TOOL_ID,
     icons: [{ icon: EXTENSION_ICON, label: "Element Hover" }],

@@ -2,7 +2,7 @@ import OBR from "@owlbear-rodeo/sdk";
 import { tiles, type TileName } from "./src/assets/tileset";
 import {
   ELEMENT_AFFINITIES,
-  ELEMENT_AFFINITY_METADATA_KEY,
+  applyElementAffinitySettings,
   getElementAffinitySetting,
   readElementAffinities,
 } from "./src/elementAffinities";
@@ -75,7 +75,7 @@ export async function setupContextMenu(): Promise<void> {
                 affinity: resistance.value,
               };
 
-              item.metadata[ELEMENT_AFFINITY_METADATA_KEY] = settings;
+              applyElementAffinitySettings(item, settings);
             }
           });
         },
