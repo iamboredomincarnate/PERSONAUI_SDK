@@ -1,12 +1,12 @@
 {
-  "name": "Owlbear Rodeo Extension Starter",
+  "name": "Persona UI",
   "version": "0.1.0",
   "manifest_version": 1,
-  "description": "A starter extension built with the Owlbear Rodeo SDK.",
+  "description": "A creature statistics and elemental vulnerability HUD for Owlbear Rodeo.",
   "action": {
-    "title": "Extension Starter",
-    "icon": "/icon.svg",
-    "popover": "/",
+    "title": "Persona UI",
+    "icon": "https://iamboredomincarnate.github.io/PERSONAUI_SDK/icon.svg",
+    "popover": "https://iamboredomincarnate.github.io/PERSONAUI_SDK/",
     "width": 400,
     "height": 460
   }
