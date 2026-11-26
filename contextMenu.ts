@@ -7,7 +7,8 @@ import {
   readElementAffinities,
 } from "./src/elementAffinities";
 
-const ID = "com.tutorial.initiative-tracker";
+const EXTENSION_ID = "iamboredomincarnate/persona-ui";
+const AFFINITY_METADATA_KEY = "com.tutorial.initiative-tracker/affinity";
 const EXTENSION_ICON = new URL(
   `${import.meta.env.BASE_URL}icon.svg`,
   window.location.href,
@@ -24,7 +25,7 @@ const tileNames = Object.keys(tiles) as TileName[];
 export async function setupContextMenu(): Promise<void> {
   for (const affinity of affinities) {
     await OBR.contextMenu.create({
-      id: `${ID}/affinity-${affinity.value}`,
+      id: `${EXTENSION_ID}/affinity-${affinity.value}`,
       icons: [
         {
           icon: EXTENSION_ICON,
@@ -40,7 +41,7 @@ export async function setupContextMenu(): Promise<void> {
       async onClick(context) {
         await OBR.scene.items.updateItems(context.items, (items) => {
           for (const item of items) {
-            item.metadata[`${ID}/affinity`] = affinity.value;
+            item.metadata[AFFINITY_METADATA_KEY] = affinity.value;
           }
         });
       },
@@ -50,7 +51,7 @@ export async function setupContextMenu(): Promise<void> {
   for (const tileName of tileNames) {
     for (const resistance of ELEMENT_AFFINITIES) {
       await OBR.contextMenu.create({
-        id: `${ID}/resistance-${tileName}-${resistance.value}`,
+        id: `${EXTENSION_ID}/resistance-${tileName}-${resistance.value}`,
         icons: [
           {
             icon: EXTENSION_ICON,

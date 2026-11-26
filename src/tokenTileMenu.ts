@@ -87,10 +87,6 @@ async function registerAssignContextMenu(): Promise<void> {
       {
         icon: EXTENSION_ICON,
         label: "Assign Elements",
-        filter: {
-          min: 1,
-          max: 1,
-        },
       },
     ],
     embed: {
