@@ -15,7 +15,7 @@ export const tiles = {
   fire: { column: 3, row: 0 },
   ice: { column: 4, row: 0 },
   electric: { column: 5, row: 0 },
-  wind: { column: 6, row: 0 },
+  psychic: { column: 6, row: 0 },
   bless: { column: 7, row: 0 },
   curse: { column: 8, row: 0 },
   poison: { column: 12, row: 0 },
