@@ -1,28 +1,34 @@
-/** Add an affinity selector to a context menu that stores items in `items`. */
-export function addAffinitySetter(contextMenu, { target, affinities, getAffinity, setAffinity }) {
-	if (!contextMenu || !Array.isArray(contextMenu.items)) {
-		throw new TypeError('contextMenu.items must be an array');
-	}
-	if (!Array.isArray(affinities) || typeof setAffinity !== 'function') {
-		throw new TypeError('affinities and setAffinity are required');
-	}
+import OBR from "@owlbear-rodeo/sdk";
 
-	const currentAffinity = typeof getAffinity === 'function'
-		? getAffinity(target)
-		: undefined;
+const ID = "com.tutorial.initiative-tracker";
+const AFFINITY_KEY = `${ID}/affinity`;
 
-	const item = {
-		label: 'Set affinity',
-		submenu: affinities.map((affinity) => ({
-			label: typeof affinity === 'string' ? affinity : affinity.label,
-			value: typeof affinity === 'string' ? affinity : affinity.value,
-			checked: (typeof affinity === 'string' ? affinity : affinity.value) === currentAffinity,
-			onSelect() {
-				setAffinity(target, typeof affinity === 'string' ? affinity : affinity.value);
-			},
-		})),
-	};
+export const affinities = [
+  { label: "Friendly", value: "friendly" },
+  { label: "Neutral", value: "neutral" },
+  { label: "Hostile", value: "hostile" },
+];
 
-	contextMenu.items.push(item);
-	return item;
+export function setupContextMenu() {
+  for (const affinity of affinities) {
+    OBR.contextMenu.create({
+      id: `${ID}/affinity-${affinity.value}`,
+      icons: [
+        {
+          icon: "/add.svg",
+          label: `Set affinity: ${affinity.label}`,
+          filter: {
+            every: [{ key: "layer", value: "CHARACTER" }],
+          },
+        },
+      ],
+      async onClick(context) {
+        await OBR.scene.items.updateItems(context.items, (items) => {
+          for (const item of items) {
+            item.metadata[AFFINITY_KEY] = affinity.value;
+          }
+        });
+      },
+    });
+  }
 }
