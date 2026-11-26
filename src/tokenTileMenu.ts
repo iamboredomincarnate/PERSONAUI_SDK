@@ -90,12 +90,6 @@ async function registerAssignContextMenu(): Promise<void> {
         filter: {
           min: 1,
           max: 1,
-          roles: ["GM"],
-          every: [{ key: "type", value: "IMAGE" }],
-          some: [
-            { key: "layer", value: "CHARACTER" },
-            { key: "layer", value: "PROP" },
-          ],
         },
       },
     ],
@@ -361,11 +355,6 @@ export function renderElementAssignmentMenu(tokenId: string | null): void {
   document.documentElement.classList.add("assignment-menu-page");
   document.body.classList.add("assignment-menu-page");
   document.body.replaceChildren(panel);
-
-  if (!tokenId) {
-    showPageError(panel, "No token was provided for element assignment.");
-    return;
-  }
 
   OBR.onReady(() => {
     void (async () => {

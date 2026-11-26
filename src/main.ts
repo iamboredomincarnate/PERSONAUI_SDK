@@ -30,11 +30,13 @@ if (view === "tiles") {
     OBR.onReady(() => {
       connectionStatus.textContent = "Connected to Owlbear Rodeo.";
       notificationButton.disabled = false;
-      setupContextMenu();
-      void initializeTokenTileMenu().catch((error: unknown) => {
-        console.error("Failed to initialize token tile menus.", error);
+      void (async () => {
+        await setupContextMenu();
+        await initializeTokenTileMenu();
+      })().catch((error: unknown) => {
+        console.error("Failed to initialize extension menus.", error);
         connectionStatus.textContent =
-          "Connected, but the token menu could not be initialized.";
+          "Connected, but the extension menus could not be initialized.";
       });
     });
   } else {

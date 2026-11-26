@@ -21,9 +21,9 @@ export const affinities = [
 
 const tileNames = Object.keys(tiles) as TileName[];
 
-export function setupContextMenu() {
+export async function setupContextMenu(): Promise<void> {
   for (const affinity of affinities) {
-    OBR.contextMenu.create({
+    await OBR.contextMenu.create({
       id: `${ID}/affinity-${affinity.value}`,
       icons: [
         {
@@ -49,7 +49,7 @@ export function setupContextMenu() {
 
   for (const tileName of tileNames) {
     for (const resistance of ELEMENT_AFFINITIES) {
-      OBR.contextMenu.create({
+      await OBR.contextMenu.create({
         id: `${ID}/resistance-${tileName}-${resistance.value}`,
         icons: [
           {
