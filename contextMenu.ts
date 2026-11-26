@@ -8,6 +8,10 @@ import {
 } from "./src/elementAffinities";
 
 const ID = "com.tutorial.initiative-tracker";
+const EXTENSION_ICON = new URL(
+  `${import.meta.env.BASE_URL}icon.svg`,
+  window.location.href,
+).toString();
 
 export const affinities = [
   { label: "Friendly", value: "friendly" },
@@ -23,7 +27,7 @@ export function setupContextMenu() {
       id: `${ID}/affinity-${affinity.value}`,
       icons: [
         {
-          icon: "/add.svg",
+          icon: EXTENSION_ICON,
           label: `Set affinity: ${affinity.label}`,
           filter: {
             some: [
@@ -49,7 +53,7 @@ export function setupContextMenu() {
         id: `${ID}/resistance-${tileName}-${resistance.value}`,
         icons: [
           {
-            icon: "/add.svg",
+            icon: EXTENSION_ICON,
             label: `Resistance: ${tileName} — ${resistance.label}`,
             filter: {
               some: [
