@@ -5,7 +5,6 @@ import {
   renderTokenTileMenu,
 } from "./tokenTileMenu";
 import "./style.css";
-import { setupContextMenu } from "./contextMenu";
 
 const params = new URLSearchParams(window.location.search);
 const view = params.get("view");
@@ -45,8 +44,3 @@ if (view === "tiles") {
     OBR.notification.show("Your Owlbear Rodeo extension is connected.");
   });
 }
-
-
-OBR.onReady(() => {
-  setupContextMenu();
-});
