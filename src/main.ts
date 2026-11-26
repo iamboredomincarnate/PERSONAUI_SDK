@@ -1,4 +1,5 @@
 import OBR from "@owlbear-rodeo/sdk";
+import { setupContextMenu } from "../contextMenu";
 import {
   initializeTokenTileMenu,
   renderElementAssignmentMenu,
@@ -29,6 +30,7 @@ if (view === "tiles") {
     OBR.onReady(() => {
       connectionStatus.textContent = "Connected to Owlbear Rodeo.";
       notificationButton.disabled = false;
+      setupContextMenu();
       void initializeTokenTileMenu().catch((error: unknown) => {
         console.error("Failed to initialize token tile menus.", error);
         connectionStatus.textContent =
