@@ -40,6 +40,9 @@ for your hosting setup before deploying.
 
 - `public/manifest.json` — Owlbear Rodeo extension manifest
 - `public/icon.svg` — icon used by the extension action
+- `src/assets/tileset.ts` — named tile coordinates and CSS background styles
 - `src/main.ts` — SDK initialization and starter action
+- `src/tokenTileMenu.ts` — client-side tile menu for selected character and
+  prop tokens
 - `src/style.css` — starter UI styles
 - `vite.config.ts` — local development server configuration
