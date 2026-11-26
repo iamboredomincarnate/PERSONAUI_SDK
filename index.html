@@ -4,31 +4,67 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#111827" />
-    <title>Owlbear Rodeo Extension Starter</title>
+    <title>Element-Weakness Overlay for Owlbear Rodeo</title>
   </head>
   <body>
-    <main class="panel">
-      <h1>Extension starter</h1>
-      <p class="intro">
-        This is a starter template for building an extension for Owlbear Rodeo. It
-        includes a basic UI and a connection to the Owlbear Rodeo SDK.
+    <main
+      style="
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 40px 20px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: rgb(20, 20, 19);
+        line-height: 1.6;
+      "
+    >
+      <h1
+        style="
+          font-size: 2.4em;
+          font-weight: 700;
+          margin-bottom: 8px;
+          color: rgb(20, 20, 19);
+        "
+      >
+        Element-Weakness Overlay for Owlbear Rodeo
+      </h1>
+
+      <p
+        style="
+          font-size: 1.1em;
+          color: rgb(61, 61, 58);
+          margin-bottom: 32px;
+        "
+      >
+        A work in progress plugin for Owlbear Rodeo SDK.
       </p>
 
-      <section class="connection" aria-labelledby="connection-heading">
-        <h2 id="connection-heading">Connection</h2>
-        <p id="connection-status" role="status" aria-live="polite">
-          Checking for Owlbear Rodeo…
-        </p>
-      </section>
+      <hr style="border: none; height: 1px; background: #e6dfd8; margin: 32px 0;" />
 
-      <button id="notification-button" type="button" disabled>
-        Send test notification
-      </button>
+      <h2 style="font-size: 1.6em; font-weight: 600; margin: 24px 0 12px;">
+        Features:
+      </h2>
 
-      <p class="hint">
-        Edit <code>src/main.ts</code> to start customizing this extension.
-      </p>
+      <ol
+        style="
+          font-size: 1.05em;
+          color: rgb(61, 61, 58);
+          padding-left: 24px;
+        "
+      >
+        <li style="margin-bottom: 6px;">
+          <strong>Element Overlay</strong> — Hovering on a Token gives a grid-based
+          display of its known element vulnerabilities, resistances, and immunities.
+        </li>
+        <li style="margin-bottom: 6px;">
+          <strong>GM Screen Filtering</strong> — Set the elemental types on the GM's
+          screen and enable their view for players separately.
+        </li>
+        <li style="margin-bottom: 6px;">
+          <strong>Icons</strong> — Included icons for elements for visual simplicity.
+        </li>
+      </ol>
     </main>
+
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
