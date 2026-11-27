@@ -5,6 +5,7 @@ import {
   applyElementAffinitySettings,
   getElementAffinitySetting,
   readElementAffinities,
+  syncTokenMemory,
 } from "./src/elementAffinities";
 
 const EXTENSION_ID = "iamboredomincarnate/persona-ui";
@@ -78,6 +79,7 @@ export async function setupContextMenu(): Promise<void> {
               applyElementAffinitySettings(item, settings);
             }
           });
+          await syncTokenMemory(context.items.map((item) => item.id));
         },
       });
     }

@@ -1,9 +1,4 @@
-import OBR, {
-  type Item,
-  type ToolContext,
-  type ToolEvent,
-  type Vector2,
-} from "@owlbear-rodeo/sdk";
+import OBR from "@owlbear-rodeo/sdk";
 import { getTileStyle, tiles, type TileName } from "./assets/tileset";
 import {
   applyElementAffinitySettings,
@@ -14,32 +9,24 @@ import {
   isElementAffinityNameCurrent,
   isTokenItem,
   readElementAffinities,
+  readTokenDisplaySettings,
   saveElementAffinities,
+  saveTokenPluginSetting,
+  syncTokenMemory,
   type ElementAffinityMap,
 } from "./elementAffinities";
+import { initializeTokenOverlays } from "./TokenOverlay";
 
 const EXTENSION_ID = "iamboredomincarnate/persona-ui";
-const HOVER_TOOL_ID = `${EXTENSION_ID}/hover-tool`;
-const HOVER_MODE_ID = `${HOVER_TOOL_ID}/mode`;
-const HOVER_POPOVER_ID = `${EXTENSION_ID}/hover-menu`;
 const ASSIGN_CONTEXT_MENU_ID = `${EXTENSION_ID}/assign-elements`;
 const TILE_NAMES = Object.keys(tiles) as TileName[];
-const TILE_GAP = 4;
-const TILE_WIDTH = 36;
-const MENU_HORIZONTAL_PADDING = 4;
-const HOVER_MENU_WIDTH =
-  TILE_NAMES.length * TILE_WIDTH +
-  Math.max(0, TILE_NAMES.length - 1) * TILE_GAP +
-  MENU_HORIZONTAL_PADDING * 2 +
-  2;
-const HOVER_MENU_HEIGHT = 52;
-const ASSIGN_MENU_HEIGHT = 540;
+const ASSIGN_MENU_HEIGHT = 700;
 const EXTENSION_ICON = new URL(
   `${import.meta.env.BASE_URL}icon.svg`,
   window.location.href,
 ).toString();
 
-function pageUrl(view: "tiles" | "assign", tokenId?: string): string {
+function pageUrl(view: "assign", tokenId?: string): string {
   const url = new URL(import.meta.env.BASE_URL, window.location.origin);
   url.searchParams.set("view", view);
 
@@ -74,15 +61,6 @@ function showPageError(container: HTMLElement, message: string): void {
   container.replaceChildren(error);
 }
 
-function anchorBelowToken(token: Item): Promise<Vector2> {
-  return OBR.scene.items.getItemBounds([token.id]).then((bounds) =>
-    OBR.viewport.transformPoint({
-      x: bounds.center.x,
-      y: bounds.max.y,
-    }),
-  );
-}
-
 async function syncExistingTokenNames(): Promise<void> {
   if ((await OBR.player.getRole()) !== "GM") {
     return;
@@ -106,6 +84,16 @@ async function syncExistingTokenNames(): Promise<void> {
   });
 }
 
+async function syncExistingTokenMemory(): Promise<void> {
+  if ((await OBR.player.getRole()) !== "GM") {
+    return;
+  }
+
+  const tokens = (await OBR.scene.items.getItems()).filter(isTokenItem);
+
+  await syncTokenMemory(tokens.map((token) => token.id));
+}
+
 async function registerAssignContextMenu(): Promise<void> {
   await OBR.contextMenu.create({
     id: ASSIGN_CONTEXT_MENU_ID,
@@ -122,257 +110,35 @@ async function registerAssignContextMenu(): Promise<void> {
   });
 }
 
-function isPointerInHoverMenu(
-  pointer: Vector2,
-  anchor: Vector2,
-): boolean {
-  return (
-    pointer.x >= anchor.x - HOVER_MENU_WIDTH / 2 &&
-    pointer.x <= anchor.x + HOVER_MENU_WIDTH / 2 &&
-    pointer.y >= anchor.y &&
-    pointer.y <= anchor.y + HOVER_MENU_HEIGHT
-  );
-}
-
 export async function initializeTokenTileMenu(): Promise<void> {
-  let hoveredTokenId: string | undefined;
-  let hoverVersion = 0;
-  let leaveTimer: number | undefined;
-  let lastPointerPosition: Vector2 | undefined;
-
-  const reportError = (error: unknown): void => {
-    console.error("Failed to update the token tile menu.", error);
-  };
-
-  const cancelLeaveTimer = (): void => {
-    if (leaveTimer !== undefined) {
-      window.clearTimeout(leaveTimer);
-      leaveTimer = undefined;
-    }
-  };
-
-  const clearHover = async (): Promise<void> => {
-    const wasHovered = hoveredTokenId !== undefined;
-    hoverVersion += 1;
-    hoveredTokenId = undefined;
-    cancelLeaveTimer();
-
-    if (wasHovered) {
-      await OBR.popover.close(HOVER_POPOVER_ID);
-    }
-  };
-
-  const showHoveredToken = async (token: Item): Promise<void> => {
-    if (hoveredTokenId === token.id) {
-      return;
-    }
-
-    const currentVersion = ++hoverVersion;
-    hoveredTokenId = token.id;
-    const anchor = await anchorBelowToken(token);
-
-    if (currentVersion !== hoverVersion) {
-      return;
-    }
-
-    await OBR.popover.open({
-      id: HOVER_POPOVER_ID,
-      url: pageUrl("tiles", token.id),
-      width: HOVER_MENU_WIDTH,
-      height: HOVER_MENU_HEIGHT,
-      anchorReference: "POSITION",
-      anchorPosition: { left: anchor.x, top: anchor.y },
-      anchorOrigin: { horizontal: "CENTER", vertical: "BOTTOM" },
-      transformOrigin: { horizontal: "CENTER", vertical: "TOP" },
-      hidePaper: true,
-    });
-  };
-
-  const handleToolMove = (_context: ToolContext, event: ToolEvent): void => {
-    lastPointerPosition = event.pointerPosition;
-    const target = event.target;
-
-    if (target && isTokenItem(target)) {
-      cancelLeaveTimer();
-      void showHoveredToken(target).catch(reportError);
-      return;
-    }
-
-    if (!hoveredTokenId || leaveTimer !== undefined) {
-      return;
-    }
-
-    const tokenId = hoveredTokenId;
-    leaveTimer = window.setTimeout(() => {
-      leaveTimer = undefined;
-      const pointer = lastPointerPosition;
-
-      if (!pointer || hoveredTokenId !== tokenId) {
-        return;
-      }
-
-      void OBR.scene.items
-        .getItems([tokenId])
-        .then(([token]) => {
-          if (!token || !isTokenItem(token)) {
-            return clearHover();
-          }
-
-          return Promise.all([
-            anchorBelowToken(token),
-            OBR.viewport.transformPoint(pointer),
-          ]).then(([anchor, screenPointer]) => {
-            if (!isPointerInHoverMenu(screenPointer, anchor)) {
-              return clearHover();
-            }
-          });
-        })
-        .catch(reportError);
-    }, 120);
-  };
-
   await registerAssignContextMenu();
   await syncExistingTokenNames().catch((error: unknown) => {
     console.error("Failed to sync existing token affinity names.", error);
   });
-  await OBR.tool.create({
-    id: HOVER_TOOL_ID,
-    icons: [{ icon: EXTENSION_ICON, label: "Element Hover" }],
-    defaultMode: HOVER_MODE_ID,
+  await syncExistingTokenMemory().catch((error: unknown) => {
+    console.error("Failed to sync token memory.", error);
   });
-  await OBR.tool.createMode({
-    id: HOVER_MODE_ID,
-    icons: [{ icon: EXTENSION_ICON, label: "Element Hover" }],
-    onToolMove: handleToolMove,
-  });
-
   OBR.scene.items.onChange((items) => {
-    const tokenId = hoveredTokenId;
-    const token = tokenId
-      ? items.find((item) => item.id === tokenId)
-      : undefined;
-
-    if (!tokenId || !token) {
-      return;
-    }
-
-    if (!isTokenItem(token)) {
-      void clearHover().catch(reportError);
-      return;
-    }
-
-    const version = hoverVersion;
-    void anchorBelowToken(token)
-      .then((anchor) => {
-        if (hoveredTokenId !== tokenId || version !== hoverVersion) {
-          return;
-        }
-
-        return OBR.popover.open({
-          id: HOVER_POPOVER_ID,
-          url: pageUrl("tiles", tokenId),
-          width: HOVER_MENU_WIDTH,
-          height: HOVER_MENU_HEIGHT,
-          anchorReference: "POSITION",
-          anchorPosition: { left: anchor.x, top: anchor.y },
-          anchorOrigin: { horizontal: "CENTER", vertical: "BOTTOM" },
-          transformOrigin: { horizontal: "CENTER", vertical: "TOP" },
-          hidePaper: true,
-        });
-      })
-      .catch(reportError);
-  });
-
-  OBR.tool.onToolChange((activeToolId) => {
-    if (activeToolId !== HOVER_TOOL_ID) {
-      void clearHover().catch(reportError);
-    }
-  });
-
-  await OBR.tool.activateTool(HOVER_TOOL_ID);
-}
-
-export function renderTokenTileMenu(tokenId: string | null): void {
-  const menu = document.createElement("div");
-  menu.className = "tile-menu";
-  menu.setAttribute("role", "group");
-  menu.setAttribute("aria-label", "Element affinities");
-  document.documentElement.classList.add("tile-menu-page");
-  document.body.classList.add("tile-menu-page");
-  document.body.replaceChildren(menu);
-
-  if (!tokenId) {
-    showPageError(menu, "No token was provided for this element menu.");
-    return;
-  }
-
-  OBR.onReady(() => {
-    let isGameMaster = false;
-
-    const render = async (): Promise<void> => {
-      const [token] = await OBR.scene.items.getItems([tokenId]);
-
-      if (!token || !isTokenItem(token)) {
-        showPageError(menu, "This token is no longer available.");
+    void (async () => {
+      if ((await OBR.player.getRole()) !== "GM") {
         return;
       }
 
-      const settings = readElementAffinities(token);
-      const cards = TILE_NAMES.map((name) => {
-        const setting = getElementAffinitySetting(settings, name);
-        const affinity = ELEMENT_AFFINITIES.find(
-          (option) => option.value === setting.affinity,
-        );
-
-        if (!affinity) {
-          throw new Error(`Unknown affinity "${setting.affinity}" for ${name}.`);
-        }
-
-        const card = document.createElement("div");
-        const status = document.createElement("span");
-        const canView = isGameMaster || setting.visible;
-        const value = canView ? affinity.display : "?";
-
-        card.className = "element-card";
-        card.title = name;
-        card.append(createIcon(name));
-
-        status.className = canView
-          ? `element-status element-status--${setting.affinity}`
-          : "element-status element-status--unknown";
-        status.textContent = value ?? "?";
-        status.setAttribute(
-          "aria-label",
-          `${name}: ${value === "?" ? "unknown" : affinity.label}`,
-        );
-        card.append(status);
-        return card;
-      });
-
-      menu.replaceChildren(...cards);
-    };
-
-    void OBR.player
-      .getRole()
-      .then((role) => {
-        isGameMaster = role === "GM";
-        return render();
-      })
-      .catch((error: unknown) => {
-        console.error("Failed to render element affinities.", error);
-        showPageError(menu, "Unable to load this token's element affinities.");
-      });
-
-    OBR.scene.items.onChange((items) => {
-      if (items.some((item) => item.id === tokenId)) {
-        void render().catch((error: unknown) => {
-          console.error("Failed to refresh element affinities.", error);
-          showPageError(menu, "Unable to refresh this token's affinities.");
-        });
-      }
+      await syncTokenMemory(
+        items
+          .filter(isTokenItem)
+          .map((item) => item.id),
+      );
+    })().catch((error: unknown) => {
+      console.error("Failed to synchronize token memory.", error);
     });
   });
+  await initializeTokenOverlays();
 }
+
+// Token cards are now scene items (see tokenOverlay.ts). This stays as an empty
+// export so existing callers still compile; remove it along with the "tiles" view.
+export function renderTokenTileMenu(_tokenId: string | null): void {}
 
 export function renderElementAssignmentMenu(tokenId: string | null): void {
   const panel = document.createElement("main");
@@ -428,16 +194,46 @@ async function initializeAssignmentForm(
   const error = document.createElement("p");
   const actions = document.createElement("div");
   const saveButton = document.createElement("button");
+  const levelField = document.createElement("label");
+  const levelLabel = document.createElement("span");
+  const levelInput = document.createElement("input");
+  const unknownLevelLabel = document.createElement("label");
+  const unknownLevelInput = document.createElement("input");
+  const unknownLevelText = document.createElement("span");
+  const usePluginLabel = document.createElement("label");
+  const usePluginInput = document.createElement("input");
+  const usePluginText = document.createElement("span");
   const controls = new Map<
     TileName,
     { affinity: HTMLSelectElement; visible: HTMLInputElement }
   >();
+  const displaySettings = readTokenDisplaySettings(token);
+  let savedPluginSetting = displaySettings.usePlugin;
+  let isSavingPluginSetting = false;
 
   form.className = "assignment-form";
   heading.textContent = "Assign Elements";
   description.className = "assignment-description";
   description.textContent =
     "Set each affinity and choose whether players can see it.";
+  levelField.className = "level-field";
+  levelLabel.textContent = "Level";
+  levelInput.type = "number";
+  levelInput.min = "0";
+  levelInput.step = "1";
+  levelInput.value = String(displaySettings.level);
+  levelInput.setAttribute("aria-label", "Token level");
+  unknownLevelLabel.className = "unknown-level";
+  unknownLevelInput.type = "checkbox";
+  unknownLevelInput.checked = displaySettings.unknownLevel;
+  unknownLevelText.textContent = "Show level as ???";
+  unknownLevelLabel.append(unknownLevelInput, unknownLevelText);
+  levelField.append(levelLabel, levelInput);
+  usePluginLabel.className = "use-plugin";
+  usePluginInput.type = "checkbox";
+  usePluginInput.checked = displaySettings.usePlugin;
+  usePluginText.textContent = "Use This Plugin";
+  usePluginLabel.append(usePluginInput, usePluginText);
   rows.className = "affinity-list";
   error.className = "assignment-error";
   error.setAttribute("role", "alert");
@@ -479,11 +275,25 @@ async function initializeAssignmentForm(
   }
 
   actions.append(saveButton);
-  form.append(heading, description, rows, error, actions);
+  form.append(
+    heading,
+    description,
+    levelField,
+    unknownLevelLabel,
+    usePluginLabel,
+    rows,
+    error,
+    actions,
+  );
   panel.replaceChildren(form);
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
+
+    if (isSavingPluginSetting) {
+      return;
+    }
+
     const updated: ElementAffinityMap = {};
 
     for (const name of TILE_NAMES) {
@@ -501,13 +311,25 @@ async function initializeAssignmentForm(
       };
     }
 
+    const level = levelInput.valueAsNumber;
+
+    if (!Number.isSafeInteger(level) || level < 0) {
+      error.textContent = "Level must be a non-negative whole number.";
+      return;
+    }
+
     saveButton.disabled = true;
     error.textContent = "";
-    void saveElementAffinities(tokenId, updated)
+    void saveElementAffinities(tokenId, updated, {
+      level,
+      unknownLevel: unknownLevelInput.checked,
+      usePlugin: usePluginInput.checked,
+    })
       .then(() => {
         error.className = "assignment-status";
         error.setAttribute("role", "status");
         error.textContent = "Saved.";
+        savedPluginSetting = usePluginInput.checked;
         saveButton.disabled = false;
       })
       .catch((saveError: unknown) => {
@@ -515,6 +337,41 @@ async function initializeAssignmentForm(
         error.className = "assignment-error";
         error.setAttribute("role", "alert");
         error.textContent = "Unable to save. Check token permissions and retry.";
+        saveButton.disabled = false;
+      });
+  });
+
+  usePluginInput.addEventListener("change", () => {
+    if (isSavingPluginSetting) {
+      return;
+    }
+
+    isSavingPluginSetting = true;
+    usePluginInput.disabled = true;
+    saveButton.disabled = true;
+    error.className = "assignment-error";
+    error.setAttribute("role", "alert");
+    error.textContent = "";
+
+    void saveTokenPluginSetting(tokenId, usePluginInput.checked)
+      .then(() => {
+        savedPluginSetting = usePluginInput.checked;
+        error.className = "assignment-status";
+        error.setAttribute("role", "status");
+        error.textContent = savedPluginSetting
+          ? "Plugin enabled."
+          : "Plugin disabled.";
+      })
+      .catch((saveError: unknown) => {
+        console.error("Failed to update the plugin setting.", saveError);
+        usePluginInput.checked = savedPluginSetting;
+        error.className = "assignment-error";
+        error.setAttribute("role", "alert");
+        error.textContent = "Unable to update the plugin setting.";
+      })
+      .finally(() => {
+        isSavingPluginSetting = false;
+        usePluginInput.disabled = false;
         saveButton.disabled = false;
       });
   });
