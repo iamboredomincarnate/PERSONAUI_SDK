@@ -8,27 +8,112 @@
       content="A creature statistics and elemental vulnerability HUD for Owlbear Rodeo."
     />
     <title>Persona UI</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"
+    />
+    <style>
+      :root {
+        color-scheme: dark;
+        --ground: #12141c;
+        --ink: #f1f2f6;
+        --muted: #b4b9c9;
+        --accent: #f2c14e;
+        --accent-ink: #11131a;
+        --radius: 0px;
+        --space: 12px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--ground);
+        color: var(--ink);
+        font-family: Inter, system-ui, sans-serif;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .panel {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      header {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      h1,
+      header p,
+      .hint p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 26px;
+        font-weight: 600;
+        line-height: 1.1;
+      }
+
+      .intro,
+      .hint {
+        color: var(--muted);
+      }
+
+      button {
+        min-height: 48px;
+        border: 1px solid var(--accent);
+        border-radius: var(--radius);
+        background: var(--accent);
+        color: var(--accent-ink);
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      /* The button appears once main.ts enables it. */
+      button:disabled {
+        display: none;
+      }
+    </style>
   </head>
   <body>
     <main class="panel">
-      <p class="eyebrow">PERSONA UI</p>
-      <h1>Elemental Affinities</h1>
-      <p class="intro">
-        View elemental affinities on tokens and manage them as the game master.
-      </p>
-      <section class="connection" aria-labelledby="connection-heading">
-        <h2 id="connection-heading">Connection</h2>
-        <p id="connection-status" role="status">
-          Connecting to Owlbear Rodeo...
+      <header>
+        <h1>Elemental Affinities</h1>
+        <p class="intro">
+          Persona/SMT-styled Element Affinity (Status) table in Owlbear Rodeo
         </p>
-      </section>
+      </header>
+      <!-- Hidden, but kept so main.ts can still find it. -->
+      <p id="connection-status" role="status" hidden>
+        Connecting to Owlbear Rodeo...
+      </p>
       <button id="notification-button" type="button" disabled>
         Test notification
       </button>
-      <p class="hint">
-        Enable “Use This Plugin” in Assign Elements to show the element menu
-        on a token.
-      </p>
+      <div class="hint">
+        <p>How To Enable:</p>
+        <ol>
+          <li>
+            Import into Owlbear Rodeo using it's manifest.json in the github
+            repo
+          </li>
+          <li>
+            Open Context Menu on a TOKEN and open the Elemental Affinity table
+          </li>
+          <li>Enable "Use This Plugin"</li>
+          <li>Set parameters for levels and affinities</li>
+        </ol>
+      </div>
     </main>
     <script type="module" src="/src/main.ts"></script>
   </body>
